@@ -5,33 +5,21 @@
 	<key>beforeRunningCommand</key>
 	<string>nop</string>
 	<key>command</key>
-	<string>#!/usr/bin/env ruby -wKU
+	<string>#!/usr/bin/env ruby18 -wKU
 
-require 'cgi'
+require "#{ENV['TM_SUPPORT_PATH']}/lib/escape.rb"
 
-# target the current selection or the current
-# word if selection is empty
-def target_text
-  selection = ENV['TM_SELECTED_TEXT']
-  current_word = ENV['TM_CURRENT_WORD']
-
-  if selection.nil? || selection.empty?
-    target = CGI.escape(current_word)
-  else
-    target = CGI.escape(selection)
-  end
-end
-
-command = "open -g dash://#{target_text}"
-# run the command
-system command
+query = e_url STDIN.read
+system 'open', '-g', "dash-plugin://query=#{query}"
 </string>
+	<key>fallbackInput</key>
+	<string>word</string>
 	<key>input</key>
-	<string>none</string>
+	<string>selection</string>
 	<key>inputFormat</key>
 	<string>text</string>
 	<key>keyEquivalent</key>
-	<string>@d</string>
+	<string>^~h</string>
 	<key>name</key>
 	<string>Documentation for Word / Selection</string>
 	<key>outputCaret</key>
@@ -39,7 +27,7 @@ system command
 	<key>outputFormat</key>
 	<string>text</string>
 	<key>outputLocation</key>
-	<string>discard</string>
+	<string>toolTip</string>
 	<key>uuid</key>
 	<string>BB3ADBCA-7CAE-46A2-9A21-0D12EF6F7C9D</string>
 	<key>version</key>

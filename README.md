@@ -1,20 +1,23 @@
 # DashMate
 
-[Dash](http://kapeli.com/dash) integration for TextMate
-
-"Dash gives you instant offline access to 130+ API documentation sets"
+[Dash][] integration for [TextMate][].
 
 ## Installation
 
-Download the DashMate.tmbundle zip archive from the [latest release](https://github.com/ram-nadella/DashMate.tmbundle/releases/latest), unzip and double click DashMate.tmbundle to install.
+Download the Source code archive from the [latest release][release], unpack and double click DashMate.tmbundle to install.
 
-(Don't forget to install [Dash](http://kapeli.com/dash) if you don't have it already)
+You will need both [TextMate][] and [Dash][], of course!
 
 ## Usage
 
-* `⌘+D` will lookup the current word or selection in Dash
-* `⌥+D` will lookup the current word or selection in Dash and automatically enable/disable docsets based on your current language scope
+* `⌃⌥H` to lookup the current word or selection in Dash
+* `⌃⌘H` to lookup the current word or selection in Dash, using docsets matching your current scope
+	* Customize the used docsets by setting `TM_DASH_KEYWORDS` in your `.tm_properties`
 
 ## Contributions
 
 Can you make this better? Fork and submit a pull request!
+
+[dash]: http://kapeli.com/dash "API Documentation Browser and Code Snippet Manager"
+[textmate]: http://macromates.com/ "The Missing Editor"
+[release]: https://github.com/mkhl/DashMate.tmbundle/releases/latest

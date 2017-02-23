@@ -5,98 +5,97 @@
 	<key>beforeRunningCommand</key>
 	<string>nop</string>
 	<key>command</key>
-	<string>#!/usr/bin/env ruby -wKU
+	<string>#!/usr/bin/env ruby18 -wKU
 
-require 'cgi'
+require "#{ENV['TM_SUPPORT_PATH']}/lib/escape.rb"
+require 'yaml'
 
-# target the current selection or the current
-# word if selection is empty
-def target_text
-  selection = ENV['TM_SELECTED_TEXT']
-  current_word = ENV['TM_CURRENT_WORD']
+# Determine keywords based on settings or scope
+# See https://kapeli.com/dash_plugins
+def keywords
+  setting = ENV['TM_DASH_KEYWORDS']
+  return setting if setting
 
-  if selection.nil? || selection.empty?
-    if current_word.nil?
-      target = ""
-    else
-      target = CGI.escape(current_word)
-    end
-  else
-    target = CGI.escape(selection)
-  end
+  # Load default mapping
+  defaults = YAML.load(DATA)
+  # Find the innermost root scope
+  # scope = ENV['TM_SCOPE'].split.reverse.find { |e| e =~ /^(source|text)/ }
+  # Find all root scopes
+  scopes = ENV['TM_SCOPE'].split.find_all { |e| e =~ /^(source|text)/ }
+  # Find keywords for scopes
+  scopes.map do |scope|
+    defaults.reject do |key, value|
+      pattern = /(^|\.)#{Regexp.escape(key)}(\.|$)/
+      scope.split('.').none? { |c| c =~ pattern }
+    end.values
+  end.join(',')
 end
 
-# figure out the current language from the TM_SCOPE variable
-# take something like the following string and figure out that it's ruby
-# "source.ruby attr.os-version.10.8.3 attr.untitled dyn.caret.end.document"
-def language
+query = e_url STDIN.read
 
-  # convert TM source name to Dash docset keyword
-  # http://kapeli.com/guide/guide#searchProfiles
-  language_map = {
-    "c"               =&gt; "c,glib,gl2,gl3,gl4,manpages",
-    "c++"             =&gt; "cpp,net,boost,qt,cvcpp,cocos2dx,c,manpages",
-    "c#"              =&gt; "net,mono,unity3d",
-    "css"             =&gt; "css,bootstrap,foundation,less,awesome,cordova,phonegap",
-    "dart"            =&gt; "dartlang,polymerdart,angulardart",
-    "html"            =&gt; "html,svg,css,bootstrap,foundation,awesome,statamic,javascript,jquery,jqueryui,jquerym,angularjs,backbone,marionette,meteor,moo,prototype,ember,lodash,underscore,sencha,extjs,knockout,zepto,cordova,phonegap,yui",
-    "java"            =&gt; "java,javafx,grails,groovy,playjava,spring,cvj,processing,javadoc",
-    "java-properties" =&gt; "java,javafx,grails,groovy,playjava,spring,cvj,processing,javadoc",
-    "jsp"             =&gt; "java,javafx,grails,groovy,playjava,spring,cvj,processing,javadoc",
-    "js"              =&gt; "javascript,jquery,jqueryui,jquerym,backbone,marionette,meteor,sproutcore,moo,prototype,bootstrap,foundation,lodash,underscore,ember,sencha,extjs,knockout,zepto,yui,d3,svg,dojo,coffee,nodejs,express,mongoose,moment,require,awsjs,jasmine,sinon,grunt,chai,html,css,cordova,phonegap,unity3d",
-    "lua"             =&gt; "lua,corona",
-    "mod-perl"        =&gt; "perl,manpages",
-    "objc"            =&gt; "iphoneos,macosx,appledoc,cocos2d,cocos3d,kobold2d,sparrow,c,manpages",
-    "objc++"          =&gt; "cpp,iphoneos,macosx,appledoc,cocos2dx,cocos2d,cocos3d,kobold2d,sparrow,cocoapods,c,manpages",
-    "php"             =&gt; "php,wordpress,drupal,zend,laravel,yii,joomla,ee,codeigniter,cakephp,phpunit,symfony,typo3,twig,smarty,phpp,html,statamic,mysql,sqlite,mongodb,psql,redis",
-    "python"          =&gt; "python,django,twisted,sphinx,flask,tornado,sqlalchemy,numpy,scipy,salt,cvp",
-    "ruby"            =&gt; "ruby,rubygems,rails",
-    "rust"            =&gt; "rust",
-    "shell"           =&gt; "bash,manpages",
-    "sql"             =&gt; "mysql,sqlite,psql",
-  }
+system 'open', '-g', "dash-plugin://keys=#{keywords}&amp;query=#{query}"
 
-  # create a list of exceptions where we do not want to
-  # pass the lang scope to the command line Dash command
-  lang_exceptions = ["coffee"]
-
-  # Identify "source" scopes; ones that represent languages
-  source_scopes = ENV['TM_SCOPE'].split(" ").select {|s| s.start_with? "source."}
-
-  # Restructure to match key format in language_map
-  # Examples:
-  # []                                          =&gt; []
-  # ["source.language"]                         =&gt; ["language"]
-  # ["source.language.dialect"]                 =&gt; ["language.dialect", "language"]
-  # ["source.language", "source.otherlanguage"] =&gt; ["language", "other_language"]
-  #
-  language_scopes = (source_scopes || []).map do |source|
-    lang = source.split(".").slice(1..-1)
-    lang.map.with_index do |x, i|
-      (lang.slice(0, i) + [x]).join('.')
-    end.reverse
-  end.flatten
-
-  # Filter out anything in the lang_exceptions list
-  language_scopes = language_scopes.reject { |l| lang_exceptions.include?(l) }
-  puts language_scopes.inspect
-
-  # Lookup the docsets for each language
-  docsets = language_scopes.map { |l| language_map[l] || l }.join(',')
-
-  return "#{docsets}"
-end
-
-command = "open -g dash-plugin://keys=#{language}\\&amp;query=#{target_text}"
-# run the command
-system command
+__END__
+---
+actionscript: actionscript
+boo: unity3d
+c: c,glib,gl2,gl3,gl4,manpages
+c++: cpp,net,boost,qt,cvcpp,cocos2dx,c,manpages
+c#: net,mono,unity3d
+js.objj: cappuccino
+clojure: clojure
+coffee: coffee
+coldfusion: cf
+ini: nginx
+css: css,bootstrap,foundation,less,awesome,cordova,phonegap
+dart: dartlang,polymerdart,angulardart
+elixir: elixir
+erlang: erlang
+go: go,godoc
+gradle: gradle
+haskell: haskell
+haml: haml
+html: html,svg,css,bootstrap,foundation,awesome,statamic,javascript,jquery,jqueryui,jquerym,angularjs,backbone,marionette,meteor,moo,prototype,ember,lodash,underscore,sencha,extjs,knockout,zepto,cordova,phonegap,yui
+jade: jade
+java: java,javafx,grails,groovy,playjava,spring,cvj,processing,javadoc
+java-properties: java,javafx,grails,groovy,playjava,spring,cvj,processing,javadoc
+js: javascript,jquery,jqueryui,jquerym,angularjs,backbone,marionette,meteor,sproutcore,moo,prototype,bootstrap,foundation,lodash,underscore,ember,sencha,extjs,titanium,knockout,zepto,yui,d3,svg,dojo,coffee,nodejs,express,grunt,mongoose,moment,require,awsjs,jasmine,sails,sinon,chai,html,css,cordova,phonegap,unity3d
+julia: julia
+less: less
+lisp: lisp
+lua: lua,corona
+markdown: markdown
+objc: iphoneos,macosx,watchos,tvos,appledoc,cocos2d,cocos3d,kobold2d,sparrow,c,manpages,cocoapods
+objc++: cpp,iphoneos,macosx,appledoc,cocos2dx,cocos2d,cocos3d,kobold2d,sparrow,c,manpages,cocoapods
+ocaml: ocaml
+perl: perl,manpages
+php: php,wordpress,drupal,zend,laravel,yii,joomla,ee,codeigniter,cakephp,phpunit,symfony,typo3,twig,smarty,craft,phpp,html,statamic,mysql,sqlite,mongodb,psql,redis
+processing: processing
+pug: pug
+puppet: puppet
+python: python,django,twisted,sphinx,flask,tornado,sqlalchemy,numpy,scipy,salt,pandas,matplotlib,cvp
+r: r
+racket: racket
+ruby: ruby,rubygems,rails
+rust: rust
+sass: sass,compass,bourbon,neat,susy,css
+scala: scala,akka,playscala
+shell: bash,manpages
+sql: mysql,sqlite,psql
+stylus: stylus
+swift: swift,iphoneos,macosx,watchos,tvos,appledoc,cocoapods
+tcl: tcl
+typescript: typescript
+yaml: chef,ansible
 </string>
+	<key>fallbackInput</key>
+	<string>word</string>
 	<key>input</key>
-	<string>none</string>
+	<string>selection</string>
 	<key>inputFormat</key>
 	<string>text</string>
 	<key>keyEquivalent</key>
-	<string>~d</string>
+	<string>^@h</string>
 	<key>name</key>
 	<string>Context-Sensitive Documentation for Word / Selection</string>
 	<key>outputCaret</key>
@@ -104,7 +103,7 @@ system command
 	<key>outputFormat</key>
 	<string>text</string>
 	<key>outputLocation</key>
-	<string>discard</string>
+	<string>toolTip</string>
 	<key>uuid</key>
 	<string>2E2D93CC-8D2B-415E-8A4E-223726CDCD24</string>
 	<key>version</key>
